@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>indexeddbDemo</title>
+</head>
+<body>
+<script>
+    class dbTest {
+        indexedDb = window.indexedDB // 创建别名
+        openRequest = this.indexedDb.open('技术中台', 1) // 创建一个打开请求
+        db = null // 初始化数据库对象实例
+        objectStore // 初始化对象仓库
+
+        init() {
+            const self = this
+            return new Promise((resolve, reject) => {
+                    self.openRequest.onupgradeneeded = function (e) { // 创建数据库时的事件监听
+                        self.db = e.target.result
+                        self._createObjectStore()
+                        resolve()
+                    }
+                    self.openRequest.onsuccess = function (e) { // 打开成功的事件监听
+                        self.db = e.target.result
+                        resolve()
+                    }
+                    self.openRequest.onerror = function (e) { // 打开失败的事件监听
+                        reject(e)
+                    }
+                }
+            )
+        }
+
+        _createObjectStore() { // 创建数据仓库 新建索引
+            this.objectStore = this.db.createObjectStore('人员组成表', {keyPath: 'id'}) // 创建数据库时 新建一张表 设置主键为id
+            this.objectStore.createIndex('name', 'name', {unique: false}) // 新建一个为name的索引 方便搜索
+        }
+
+        add({id, name, age, sex}) {
+            return new Promise((resolve, reject) => {
+                let request = this.db.transaction(['人员组成表'], 'readwrite') // 新建一个具有读写权限的事务
+                    .objectStore('人员组成表')
+                    .add({
+                        id,
+                        name,
+                        age,
+                        sex
+                    })
+                request.onsuccess = function () {
+                    console.log('数据写入成功')
+                    resolve()
+                }
+                request.onerror = function (e) {
+                    reject(e)
+                    console.log('数据写入失败')
+                }
+            })
+        }
+    }
+
+    let db = new dbTest()
+    db.init()
+        .then(() => {
+            return Promise.all([
+                db.add({id: 1, name: '王真', age: 23, sex: 'male'}),
+                db.add({id: 2, name: '田凯', age: 23, sex: 'male'}),
+                db.add({id: 3, name: '吴晨', age: 27, sex: 'male'}),
+            ])
+        })
+        .then(() => {
+            console.log('数据全部写入成功')
+        })
+
+</script>
+
+</body>
+</html>
