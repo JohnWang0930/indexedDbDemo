@@ -38,7 +38,7 @@
 
         }
 
-        add({id, name, age, sex}) {
+        write({id, name, age, sex}) {
             return new Promise((resolve, reject) => {
                 let request = null
                 let objectStore = this.db.transaction(['人员组成表'], 'readwrite') // 新建一个具有读写权限的事务
@@ -101,9 +101,29 @@
                         resolve(arr)
                     }
                 }
-                request.onerror = function(e){
+                request.onerror = function (e) {
                     reject(e)
                 }
+            })
+        }
+
+        searchName(name) {
+            return new Promise((resolve, reject) => {
+                if (!name) {
+                    reject(new Error('没有姓名'))
+                }
+                let objectStore = this.db.transaction('人员组成表', 'readwrite')
+                    .objectStore('人员组成表')
+                let searchIndex = objectStore.index('name')
+                let request = searchIndex.get(name)
+                request.onsuccess = function (e) {
+                    console.log('搜索完成')
+                    resolve(e.target.result)
+                }
+                request.onerror = function (e) {
+                    reject(e)
+                }
+
             })
         }
     }
@@ -112,21 +132,25 @@
     db.init()
         .then(() => {
             return Promise.all([
-                db.add({id: 1, name: '王真', age: 23, sex: 'male'}),
-                db.add({id: 2, name: '田凯', age: 23, sex: 'male'}),
-                db.add({id: 3, name: '吴晨', age: 27, sex: 'male'}),
+                db.write({id: 1, name: '王真', age: 23, sex: 'male'}),
+                db.write({id: 2, name: '田凯', age: 23, sex: 'male'}),
+                db.write({id: 3, name: '吴晨', age: 27, sex: 'male'}),
             ])
         })
         .then(() => {
             console.log('数据全部写入/更新成功')
             return db.read(2)
         })
-        .then(data=> {
-            console.log(data)
+        .then(data => {
+            console.log('读取id为2的行:\n', data)
             return db.forEach()
         })
-        .then(data=>{
-            console.log(data)
+        .then(data => {
+            console.log('全部数据:\n', data)
+            return db.searchName('吴晨')
+        })
+        .then(data => {
+            console.log('搜索"吴晨"所在行的数据:\n', data)
         })
 
 
